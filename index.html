@@ -2,22 +2,110 @@
 <html lang="ar">
 <head>
   <meta charset="UTF-8">
-  <title>مشغل الصوت</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>تحويل النص إلى صوت - الشعباني</title>
+  <style>
+    body {
+      background: linear-gradient(to right, #00c6ff, #0072ff);
+      font-family: 'Segoe UI', sans-serif;
+      color: white;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 40px;
+      text-align: center;
+    }
+    textarea {
+      width: 80%;
+      height: 150px;
+      font-size: 1.2em;
+      padding: 10px;
+      margin-bottom: 20px;
+      border-radius: 10px;
+      border: none;
+      outline: none;
+    }
+    button {
+      background-color: #ffffff;
+      color: #0072ff;
+      border: none;
+      padding: 10px 20px;
+      font-size: 1.2em;
+      border-radius: 10px;
+      cursor: pointer;
+      margin: 10px;
+    }
+    button:hover {
+      background-color: #e0e0e0;
+    }
+    audio {
+      margin-top: 20px;
+      width: 80%;
+    }
+  </style>
 </head>
-<body style="text-align: center; margin-top: 50px;">
+<body>
 
-  <h1>ملف الصوت مالتي</h1>
+  <h1>موقع الشعباني لتحويل النص إلى صوت</h1>
 
-  <audio controls>
-    <source src="audio.mp3" type="audio/mpeg">
-    المتصفح مالتك ما يدعم تشغيل الصوت.
-  </audio>
+  <textarea id="text-input" placeholder="اكتب النص هنا..."></textarea>
+  <br>
+  <button onclick="startConversion()">تحويل إلى صوت</button>
+  <button onclick="downloadAudio()" id="download-btn" disabled>تحميل الصوت</button>
+  <audio id="audio-player" controls></audio>
 
-  <br><br>
+  <script>
+    let mediaRecorder;
+    let audioChunks = [];
 
-  <a href="audio.mp3" download>
-    <button style="padding: 10px 20px; font-size: 18px;">تحميل الصوت</button>
-  </a>
+    async function startConversion() {
+      const text = document.getElementById('text-input').value;
+      if (text.trim() === '') {
+        alert('رجاءً اكتب نص بالبداية');
+        return;
+      }
+
+      // نصنع صوت عن طريق speechSynthesis
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.lang = 'ar-SA';
+
+      // نسجل الصوت
+      const stream = await navigator.mediaDevices.getDisplayMedia({ audio: true, video: false });
+      mediaRecorder = new MediaRecorder(stream);
+
+      audioChunks = [];
+
+      mediaRecorder.ondataavailable = event => {
+        audioChunks.push(event.data);
+      };
+
+      mediaRecorder.onstop = () => {
+        const audioBlob = new Blob(audioChunks);
+        const audioUrl = URL.createObjectURL(audioBlob);
+        const audio = document.getElementById('audio-player');
+        audio.src = audioUrl;
+        document.getElementById('download-btn').disabled = false;
+      };
+
+      mediaRecorder.start();
+      speechSynthesis.speak(utterance);
+
+      utterance.onend = () => {
+        mediaRecorder.stop();
+      };
+    }
+
+    function downloadAudio() {
+      const blob = new Blob(audioChunks, { type: 'audio/wav' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'الشعباني-نص-الى-صوت.wav';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+    }
+  </script>
 
 </body>
 </html>
